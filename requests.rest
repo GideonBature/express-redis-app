@@ -4,7 +4,7 @@ Content-Type: application/json
 {
     "name": "John",
     "age": 30,
-    "email": "john@example.com",
+    "email": "joh@example.com",
     "password": "password",
     "gender": "male"
 }
@@ -15,6 +15,6 @@ POST http://localhost:3000/user/login
 Content-Type: application/json
 
 {
-    "email": "john@example.com",
+    "email": "joh@example.com",
     "password": "password"
 }
