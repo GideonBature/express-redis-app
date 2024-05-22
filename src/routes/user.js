@@ -5,7 +5,16 @@ const redis = require('redis');
 const User = require('../models/User');
 
 const router = express.Router();
+
 const redisClient = redis.createClient();
+
+   
+(async () => {
+    await redisClient.connect();
+})();
+
+redisClient.on('connect', () => console.log('Redis Client Connected'));
+redisClient.on('error', (err) => console.log('Redis Client Connection Error', err));
 
 // Middleware to check token
 const authenticateToken = (req, res, next) => {
@@ -54,9 +63,13 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ _id: user._id }, 'secretkey', { expiresIn: '1h' });
 
     // Save the token in Redis with an expiration of 1 hour
-    redisClient.setex(token, 3600, JSON.stringify({ _id: user._id }));
-
-    res.header('Authorization', token).send({ token });
+    await redisClient.set(token, JSON.stringify({ _id: user._id }), 'EX', 3600, (err) => {
+        if (err) {
+            return res.status(500).send('Redis error: ' + err.message);
+        }
+        res.header('Authorization', token).send({ token });
+    });
+    res.send({ token });
 });
 
 // Get user profile
@@ -71,7 +84,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
                 const user = await User.findById(id);
                 if (!user) return res.status(404).send('User not found');
                 
-                redisClient.setex(id, 3600, JSON.stringify(user));
+                redisClient.set(id, 3600, JSON.stringify(user));
                 res.send(user);
             } catch (err) {
                 res.status(400).send(err);
